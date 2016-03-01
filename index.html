@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Qgis advanced 2015 : NICAR 2015 QGIS advanced class notes">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>NICAR 2016: QGIS 2</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/mikejcorey/qgis_advanced_2015">View on GitHub</a>
+
+          <h1 id="project_title">NICAR 2016: QGIS 2</h1>
+          <h2 id="project_tagline">Manipulating and editing geographic data with QGIS</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/mikejcorey/qgis_advanced_2015/zipball/gh-pages">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/mikejcorey/qgis_advanced_2015/tarball/gh-pages">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+
+<h3>Earthquakes in Oklahoma</h3>
+
+<p>Did you know there were more earthquakes in Oklahoma than in California in 2014? That's pretty scary. But the quakes were concentrated in a few key areas. We want to make a map to show who is experiencing the most earthquakes, and will use data joins, reprojection and hex binning to make it happen. Finally, we'll simplify some of our spatial data so it's more ready to use on the big, bad Internet.</p>
+
+<p><strong>The examples shown here are from QGIS 2.6.1 on Ubuntu and have been tested on QGIS 2.14, and should be substantially similar to other operating systems and versions that are close to 2.6.</strong></p>
+
+<h3>Open earthquakes shapefile</h3>
+
+<p>Click the <img class="button-image" src="images/addvectorbutton.jpg"/> button to add a new vector layer.</p>
+
+<p>Click "browse" to choose a shapefile.</p>
+
+<img class="viz-aid" src="images/addvector2.jpg"/>
+
+<p>Our first dataset is a shapefile of earthquake epicenters from the ANSS catalog. You can find the zipped shapefile in the "data" folder of the project. A shapefile is actually several files with the same name and different extensions. Choose <code>ANSS_2014_US_minimal.shp</code>:</p>
+
+<img class="viz-aid" src="images/addvector3.jpg"/>
+
+<p>Then click "Open." By default you'll see the full extent of the layer, which may look a bit confusing because the Aleutian Islands cross the International Dateline. So use the <img src="images/zoombutton.jpg"/> zoom button to zoom into the contintental United States (the biggest blob).</p>
+
+<img class="viz-aid" src="images/quakesadded.jpg"/>
+
+<p>We can see what other columns besides the epicenter we have by showing the attribute table. RIght-click on the layer in the Layers panel to select "Open attribute table."</p>
+
+<img class="viz-aid" src="images/showattributetable1.jpg"/>
+
+<p>When we open the attribute table, there's not much there beyond the spatial information, just a primary key field and an <code>event_id</code> field.</p>
+
+<img class="viz-aid" src="images/showattributetable2.jpg"/>
+
+<p>This is an extreme example (which is entirely contrived on my part) of a common problem: you have spatial data in one table or shapefile, and another attribute you want to visualize spatially in a different file.
+
+<h3>Open CSV with more data</h3>
+
+<p>In this case, we have data about when the earthquake occurred, magnitude and depth in another CSV. We can join the two datasets because both datasets have a column we can join on: <code>event_id</code> in our shapefile, and <code>catalog_event_id</code> in our CSV file, called <code>ANSS_quake_stats.csv</code>.
+
+<p>Use the <img src="images/addcsv1.jpg"/> button in the left rail of QGIS to add a delimited text layer.</p>
+
+<img class="viz-aid" src="images/addcsv2.jpg"/>
+
+<p>Choose the csv file and click "Open" to bring up a screen with more import options:</p>
+
+<img class="viz-aid" src="images/addcsv3.jpg"/>
+
+<p>The only option to change in this case is to select "No geometry (attribute only table)," since there is no spatial information in this csv. Then click OK. Nothing on the map will change, but there will be a new layer in the Layers panel, <code>ANSS_quake_stats</code>.<p>
+
+<img class="viz-aid" src="images/addcsv4.jpg"/>
+
+<h3>Join shapefile and CSV</h3>
+
+<p>Now we'll create a join. To start, right-click on the shapefile layer (<code>ANSS_2014_US_minimal</code>) --- <strong>NOT the CSV layer</strong> -- and choose "Properties."</p>
+
+<img class="viz-aid" src="images/layer_properties.jpg"/>
+
+<p>Now click the <img src="images/joinbutton.jpg"/> join button in the left menu of the popup, then click the <img src="images/addjoinlayer.jpg"/> button to create a new join.</p>
+
+<p>Now we'll tell QGIS what we want to join and how. For "Join layer," choose our CSV file. And then tell QGIS which two fields are the same in the tables: <code>catalog_event_id</code> in the csv, and <code>event_id</code> in the original shapefile.</p>
+
+<img class="viz-aid" src="images/joindetails.jpg"/>
+
+<p>Click "OK" in the popup, then click "OK" again to close the layer properties.</p>
+
+<p>Let's check our work by opening up the attribute table again. If we did the join correctly, you should see data in the newly joined columns, like so:</p>
+
+<img class="viz-aid" src="images/joined_attributes.jpg"/>
+
+<p>If you see a bunch of NULL values in the joined columns, it likely means you joined on the wrong fields.</p>
+
+<h3>Save joined data as new shapefile</h3>
+
+<p>Even though our shapefile and CSV are now joined, we can't do fun stuff like filter by attributes in the joined CSV, like magnitude or date. So we'll save a new copy of the shapefile with the joined attributes. Right-click on the shapefile layer and click "Save as."</p>
+
+<img class="viz-aid" src="images/save_as_joined_pre.jpg"/>
+
+<p>There's a few things to make sure we're doing right here. First, click "Browse" to tell QGIS where to save the new file, which you should call <code>ANSS_2014_US_joined.shp</code> so we're all on the same page. For "Format" we want <code>ESRI Shapefile</code>. For CRS (coordinate reference system), we want <code>Layer CRS</code>, and in the box below it should say <code>WGS 84</code>. WGS 84 means that our coordinates are in straight latitude/longitude pairs and are not <a href="https://source.opennews.org/en-US/learning/choosing-right-map-projection/" target="_blank">projected</a>. We'll mess with this more in a minute, but as long as your popup matches this click "OK."</p>
+
+<img class="viz-aid" src="images/save_as_joined.jpg"/>
+
+<p>Great! Now we have a single shapefile with all of our earthquake data. Let's filter! Right-click on the <code>ANSS_2014_joined</code> layer and click <code>Filter</code>:</p>
+
+<img class="viz-aid" src="images/joinedfilterohnobad.jpg"/>
+
+<p>Hey! Where are my hard-won event_date, magnitude and depth columns?!</p>
+
+<h3>Zounds! Column shenanigans!</h3>
+
+<p>What happened here? If you recall, when we did our data join, the new columns had the csv layer name pre-pended to them. When we saved the joined file as a new shapefile, the column headers got truncated to the first few characters, which are clearly unhelpful.</p>
+
+<p>This isn't really QGIS's fault, but has more to do with the nature of shapefiles. The data component of a shapefile is stored as a DBF file, and DBF column headers can be a maximum of 10 characters long. This made sense long ago when memory was more precious, but it's stupid nowadays. Still, it is reality and we shall endeavor to practice professionalism and forbearance.</p>
+
+<p>Can we fix it? Yes we can!</p>
+
+<h3>Installing the Table Manager plugin</h3>
+
+<p>It's a little silly that we have to install a plugin to change column names, but we are endeavoring to practice professionalism and forbearance, and installing plugins is easy:</p>
+
+<p>Click <code>Plugins > Manage and Install Plugins</code>.</p>
+
+<img class="viz-aid" src="images/manageplugins1.jpg"/>
+
+<p> Search for "table" in the search box, and choose the <code>Table Manager</code> plugin:</p>
+
+<img class="viz-aid" src="images/manageplugins2.jpg"/>
+
+<p>Now click "Install plugin."</p>
+
+<h3>Fix column names</h3>
+
+<p>With the plugin installed, you should see a <img src="images/tablemanagerbutton.jpg"/> button in your left rail. Select the joined-and-saved layer (<code>ANSS_2014_US_joined</code>), and click the <img src="images/tablemanagerbutton.jpg"/>button.</p>
+
+<p>We are presented with a list of columns in our layer. Luckily for our sanity, QGIS does preserve the column order from the original join, so you can use the order to extrapolate which column is which. (That said, you should always verify the results if you're using this data in battle.)</p>
+
+<img class="viz-aid" src="images/rename_columns1.jpg"/>
+
+<p>Click "Rename" to change each column name, like so:</p>
+
+<img class="viz-aid" src="images/rename_columns2.jpg"/>
+
+<p>Click "Save" to confirm the new column headers and re-save the shapefile.</p>
+
+<p>Oh, and just say no to this:</p>
+
+<img class="viz-aid" src="images/rename_columns3.jpg"/>
+
+<h3>Open Oklahoma counties</h3>
+
+<p>Now we turn to extracting only the earthquakes that occured in Oklahoma from our larger, national dataset. We'll use a shapefile of Oklahoma counties from the Census Bureau to spatially filter our earthquake data.</p>
+
+<p>Add a new vector layer and select the <code>tl_2014_40_county.shp</code> file.</p>
+
+<img class="viz-aid" src="images/opencountylayer.jpg"/>
+
+<p>Hey, where's Oklahoma? Right-click on the county layer, and select "Zoom to Layer."</p>
+
+<img class="viz-aid" src="images/zoomtolayer.jpg"/>
+
+<p>Much better:</p>
+
+<img class="viz-aid" src="images/counties_and_quakes.jpg"/>
+
+<h3>Project shapefiles into UTM zone 14N</h3>
+
+<p>Even though the earthquakes and counties look like they're overlaying each other properly, the two layers are actually in different spatial reference systems. The earthquakes layer is in WGS 84 (SRID 4326) and the county layer is in NAD 83 (SRID 4269). QGIS (often over-aggressively) is transforming each layer on the fly to show everything together visually, but to actually do spatial operations between the two layers, they must be in the same projection.</p>
+
+<p>So which projection should we choose? That's a whole 'nother class, but short version: We'll use UTM Zone 14N.</p>
+
+<p>Why? First, because both of the source coordinate systems (WGS 84 and NAD 83) are unprojected geographic coordinates. This makes measuring distances and making equilateral shapes (like hex bins) difficult, because the size of a degree of longitude varies depending on the latitude. So we need a coordinate system that uses nice, easy-to-work-with units. Like meters -- everyone loves meters, right? Luckily, we're working with a relatively small area -- one state -- so UTM is a good choice. Within UTM, Zone 14N is the appropriate zone for Oklahoma.</p>
+
+<p>So, now let's create new versions of both layers in UTM Zone 14N. Let's do counties first. Just right-click on the county layer, and click "Save As..."</p>
+
+<img class="viz-aid" src="images/reproject_county_1.jpg"/>
+
+<p>Like before, click "Browse" to change the file name, this time to <code>tl_2014_40_county_utm14.shp</code>. Now we'll specify a new projection. If it's not already set that way, change CRS to "Layer CRS" and click "Change" to specify a projection.</p>
+
+<img class="viz-aid" src="images/reproject_county_2.jpg"/>
+
+<p>QGIS knows hundreds of different projections, so type "utm zone 14" into the Filter window at the top to get matches. You'll see there are several results. We'll choose <code>WGS 84 / UTM zone 14N (EPSG:32614)</code>. Then click "OK."</p>
+
+<img class="viz-aid" src="images/reproject_county_3.jpg"/>
+
+<p>Now you're back on the "Save as ..." popup. Click "OK" to save the projected shapefile.</p>
+
+<p>Repeat this same process for the earthquakes shapefile. Remember, it's important that both new shapefiles are saved in <code>WGS 84 / UTM zone 14N (EPSG:32614)</code>.
+
+<p>You should now have two new layers in your QGIS viewer: <code>ANSS_2014_US_joined_utm</code> and <code>tl_2014_40_county_utm14</code>.</p>
+
+<h3>Extract Oklahoma earthquakes</h3>
+
+<p>Now we'll use our reprojected county shapefile to extract only the earthquakes that are within the state of Oklahoma. We'll do this by finding the <strong>intersection</strong> between the earthquakes layer and the county layer.</p>
+
+<p>Click "Vector > Geoprocessing tools > Intersect ...":</p>
+
+<img class="viz-aid" src="images/intersect1.jpg"/>
+
+<p>In the popup, set the "Input vector layer" to the earthquakes layer, and set the counties layer as the "Intersect layer". We do it this way as opposed to the other way around because we want to end up with the earthquakes that are within the counties, not the counties that touch earthquakes.</p>
+
+<p>Make sure you're using the UTM 14 layers, because the intersection will not work if the two layers are in different projections.</p>
+
+<p>Click "Browse" to choose a file path, and call the new layer <code>ok_quakes_only.shp</code></p>
+
+<img class="viz-aid" src="images/intersect2.jpg"/>
+
+<p>Click "OK," then "Close" once the progress bar finishes, and boom! Oklahoma quakes only!</p>
+
+<img class="viz-aid" src="images/intersect3.jpg"/>
+
+<h3>Create hexagonal bins</h3>
+
+<p>Now we'll create hexagonal bins to show more clearly which areas have the most earthquakes, which is somewhat difficult to tell with only the point data.</p>
+
+<p>Why not just count by county?</p>
+
+<p>We certainly could. In Oklahoma, the counties are relatively similary sized, so this wouldn't be particularly unfair. But some of the counties have an irregular shape, and what if we want to show more detail within a county, or some arbitrary place that doesn't have prexisting geographic boundaries that make sense?</p>
+
+<p>Solution: hex bins. First, we have to create the bins.</p>
+
+<p>We'll use a plugin called MMQGIS to create the bins. In this class, the plugins are already installed on the lab machines, but if you don't already have MMQGIS, follow the directions from above for installing the Table Manager plugin, but search for MMQGIS instead.</p>
+
+<p>While you can manually change it, by default MMQGIS will draw grids based on your current view. So zoom out to where you can see all of Oklahoma, plus a bit more (or a lot more, but it will take a bit longer to make the grids).</p>
+
+<p>Then, click "MMQGIS > Create > Create Grid Lines Layer":</p>
+
+<img class="viz-aid" src="images/hex_bins_1.jpg"/>
+
+<p>Select an output file for your bins, and call it <code>ok_hex_grid.shp</code>. Change the pulldown menu at the bottom of the popup to "hexagon (polygon)":</p>
+
+<img class="viz-aid" src="images/hex_bins_2.jpg"/>
+
+<h3>How big do you want your bins?</h3>
+
+<p>Now it gets a little weird. Since the hexagons aren't squares, it's not super-simple to figure out how big to make them based on area or dimensions. The options you can set are "H spacing" and "V spacing." For hexagons, we'll only mess with "V spacing," which is equivalent to the <a href="http://geometryatlas.com/entries/188" target="_blank">short diagonals</a> of the hexagons.<p>
+
+<p>For the purposes of this exercise, let's say that we want hexagonal grids with an area of 20 square miles. Remember, the unit of our projection is meters, so we'll convert everything to meters. Twenty square miles is 51,799,800 square meters. We can use <a href="http://rechneronline.de/pi/hexagon.php" target="blank">this calculator</a> to figure out what short diagonal length will yield a hexagon with an area of 51,799,800 square meters. Spoiler alert: it's ~7,734 meters.</p>
+
+<p>So set the "V spacing" to 7734, and click "OK". Another popup will appear, asking you to choose a projection. We want to keep everything in the same projection, so again select <code>WGS 84 / UTM zone 14N (EPSG:32614)</code>. Click "OK" again.</p>
+
+<img class="viz-aid" src="images/hex_bins_3.jpg"/>
+
+<p>Well, that's pretty odd. Drag the grid layer below your others to see the rest of the data.</p>
+
+<img class="viz-aid" src="images/hex_bins_4.jpg"/>
+
+<p>That's better.</p>
+
+<h3>Count the earthquakes in each bin</h3>
+
+<p>Now we'll do a point-in-polygon analysis to count how many quakes are in each of the grids we created. Click "Vector > Analysis > Points in polygon...":</p>
+
+<img class="viz-aid" src="images/hex_bins_5.jpg"/>
+
+<p>Select <code>ok_hex_grid</code> as the input polygon vector layer, and <code>ok_quakes_only</code> for input vector point layer. Then choose a file name for the layer that will be created, <code>ok_quakes_hex_count.shp</code>.</p>
+
+<img class="viz-aid" src="images/hex_bins_6.jpg"/>
+
+<p>Click "OK", then "Close" when the process is complete. Our new <code>ok_quakes_hex_count</code> layer looks the same as the existing grid layer, but has a new field, PNTCNT, which contains the number of earthquakes in that grid.</p>
+
+<h3>Filter out bins with no quakes</h3>
+
+<p>Still, most of the grids we created don't actually have any earthquakes. So let's filter to focus on the grids that are actually interesting. Right-click on the <code>ok_quakes_hex_count</code> layer and choose "Filter." Then tell QGIS that we only want grids where PNTCNT is greater than 0:</p>
+
+<img class="viz-aid" src="images/hex_bins_7.jpg"/>
+
+<p>Click "OK." Now we're getting somewhere:</p>
+
+<img class="viz-aid" src="images/hex_bins_8.jpg"/>
+
+<h3>Color bins by count</h3>
+
+<p>Now let's color-code the hex bins by how many earthquakes each has. Right-click on the <code>ok_quakes_hex_count</code> layer, choose "Properties," and click on the "Style" tab on the left side:</p>
+
+<img class="viz-aid" src="images/hex_bins_9.jpg"/>
+
+<p>Fill out the fields as shown above, then click "Classify." You'll see that many of the bins only have 1 or 2 quakes, but others have more than 30. Click "OK".</p>
+
+<img class="viz-aid" src="images/hex_bins_10.jpg"/>
+
+<p>Boom. Much more clarity than the bunched-together points we started with.</p>
+
+<h3>Simplify county shapefile</h3>
+
+<p>Now it's time to take this party outside of QGIS to somewhere like TileMill, Leaflet, GeoDjango, D3, whatever. Those are all pretty legit places to party. But if you're heading to a production website, we're carrying a lot of extra weight. The counties shapefile is somewhere around 5 MB -- no one wants to load that much data on a live website.</p>
+
+<p>So before we export, let's simplify the geometry of the counties layer. There is a lot of extra space being taken up by all the twists and turns of the rivers that make up many of the county borders. As much detail as possible is important for analysis, but unless you're going to show a very zoomed-in view, the difference between the original and simplified versions will be impossible to see.</p>
+
+<p>Click "Vector > Geometry Tools > Simplify Geometries ...":</p>
+
+<img class="viz-aid" src="images/simplify_1.jpg"/>
+
+<p>Again, to keep things simple we'll stick with UTM 14N at this stage, so we're still dealing with the <code>tl_2014_40_county_utm14</code> layer. The key value to set here is "Simplify tolerance." The higher you set this number, the less detail will remain after simplification. Tolerance is often a game of guess-and-check, sadly, because it varies with each projection and how complicated the geometries you're dealing with are. In this case, a tolerance of 100 will work well. But for other projections the appropriate value might be 0.0001.</p>
+
+<p>So for now, enter 100 for the tolerance, and specify a file location, with the filename <code>tl_2014_40_county_utm14_simplify_100.shp</code>.</p>
+
+<img class="viz-aid" src="images/simplify_2.jpg"/>
+
+<p>Once we click "OK", you'll get a popup that reports back on the havoc you have wrought. In this case, we reduced the number of vertices by a factor of 30!</p>
+
+<img class="viz-aid" src="images/simplify_3.jpg"/>
+
+<p>But that's fine in this case. You'll have to zoom waaaaay in on the layer to see the difference between the two, and we've reduced our file size to around 100K.</p>
+
+<img class="viz-aid" src="images/simplify_4.jpg"/>
+
+<h3>Export GeoJSON</h3>
+
+<p>Now it's time to export from QGIS. There's many format options, but in this case we'll do GeoJSON because it's so translatable to many other applications.</p>
+
+<p>Right-click on the <code>tl_2014_40_county_utm14_simplify_100</code> layer and click "Save As." First, change the "Format" to GeoJSON (but look at all those other options!) and pick a filename for your geoJSON.</p>
+
+<img class="viz-aid" src="images/geojson1.jpg"/>
+
+<p>Next, we'll export into basic WGS 84 latitude/longitude coordinates, because most external libraries expect that, rather than projected coordinates. Click "Change...", then search for "4326" (the SRID of WGS 84) to find the correct coordinate system. Select "WGS 84" and click "OK."</p>
+
+<img class="viz-aid" src="images/geojson2.jpg"/>
+
+<p>And if your popup looks like this, go ahead and click "OK".
+
+<img class="viz-aid" src="images/geojson3.jpg"/>
+
+<p>We did it!</p>
+
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Qgis advanced 2015 maintained by <a href="https://github.com/mikejcorey">mikejcorey</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
